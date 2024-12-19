@@ -39,6 +39,11 @@
   zstd,
   withLibcap ? true,
   libcap,
+  clang,
+  libllvm,
+  capstone,
+  libtracefs,
+  jdk
 }:
 let
   d3-flame-graph-templates = stdenv.mkDerivation rec {
@@ -119,7 +124,7 @@ stdenv.mkDerivation {
     ++ lib.optional (!withZstd) "NO_LIBZSTD=1"
     ++ lib.optional (!withLibcap) "NO_LIBCAP=1";
 
-  hardeningDisable = [ "format" ];
+  hardeningDisable = [ "format" "stackprotector" "zerocallusedregs" ];
 
   # perf refers both to newt and slang
   nativeBuildInputs = [
@@ -135,7 +140,10 @@ stdenv.mkDerivation {
     makeWrapper
     pkg-config
     python3
+    clang
+    libllvm
   ];
+  JDIR = jdk.outPath;
 
   buildInputs =
     [
@@ -150,6 +158,9 @@ stdenv.mkDerivation {
       python3
       perl
       babeltrace
+      capstone
+      libtracefs
+      jdk
     ]
     ++ (
       if (lib.versionAtLeast kernel.version "5.19") then
