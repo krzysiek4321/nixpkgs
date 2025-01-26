@@ -63,6 +63,7 @@ let
   # add that flag for those particular invocations.
   clang-bpf = writeShellScript "clang-bpf" ''
     NIX_HARDENING_ENABLE=''${NIX_HARDENING_ENABLE/zerocallusedregs/}
+    NIX_HARDENING_ENABLE=''${NIX_HARDENING_ENABLE/stackprotector/}
     exec ${lib.getExe buildPackages.clang} "$@"
   '';
 in
@@ -97,13 +98,19 @@ stdenv.mkDerivation {
       cd tools/perf
 
       for x in util/build-id.c util/dso.c; do
-        substituteInPlace $x --replace /usr/lib/debug /run/current-system/sw/lib/debug
+        substituteInPlace $x --replace-fail /usr/lib/debug /run/current-system/sw/lib/debug
       done
 
+      # I wonder if after generation switch modules are reloaded to use newer ones. I don't think so.
+      # Does the above for loop also changes buildid directory for kernel modules?
+      substituteInPlace util/machine.c --replace-fail /lib/modules /run/booted-system/kernel-modules/lib/modules
+      # This is a runtime dependency not build time. At most I can set my system to have vmlinux setup in /run/booted-system
+      # and point to it
+      substituteInPlace util/symbol.c --replace-fail \"/boot/vmlinux\" \"/run/booted-system/vmlinux\"
     ''
     + lib.optionalString (lib.versionAtLeast kernel.version "5.8") ''
       substituteInPlace scripts/python/flamegraph.py \
-        --replace "/usr/share/d3-flame-graph/d3-flamegraph-base.html" \
+        --replace-fail "/usr/share/d3-flame-graph/d3-flamegraph-base.html" \
         "${d3-flame-graph-templates}/share/d3-flame-graph/d3-flamegraph-base.html"
 
     ''
@@ -115,6 +122,7 @@ stdenv.mkDerivation {
     [
       "prefix=$(out)"
       "WERROR=0"
+      "NO_SHELLCHECK=1"
       "ASCIIDOC8=1"
       "CLANG=${clang-bpf}"
     ]
@@ -181,13 +189,6 @@ stdenv.mkDerivation {
           python3.pkgs.distutils
           python3.pkgs.packaging
         ];
-
-  env.NIX_CFLAGS_COMPILE = toString [
-    "-Wno-error=cpp"
-    "-Wno-error=bool-compare"
-    "-Wno-error=deprecated-declarations"
-    "-Wno-error=stringop-truncation"
-  ];
 
   doCheck = false; # requires "sparse"
 

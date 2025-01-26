@@ -271,6 +271,7 @@
   ./programs/obs-studio.nix
   ./programs/partition-manager.nix
   ./programs/pay-respects.nix
+  ./programs/perf.nix
   ./programs/plotinus.nix
   ./programs/pqos-wrapper.nix
   ./programs/projecteur.nix
