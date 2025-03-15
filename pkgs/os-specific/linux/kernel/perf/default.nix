@@ -28,6 +28,7 @@
   libopcodes_2_38,
   libpfm,
   libtraceevent,
+  libtracefs,
   openssl,
   systemtap,
   numactl,
@@ -41,6 +42,8 @@
   libcap,
   buildPackages,
   writeShellScript,
+  libllvm,
+  capstone
 }:
 let
   d3-flame-graph-templates = stdenv.mkDerivation rec {
@@ -147,6 +150,7 @@ stdenv.mkDerivation {
     makeWrapper
     pkg-config
     python3
+    libllvm
   ];
 
   buildInputs =
@@ -155,6 +159,7 @@ stdenv.mkDerivation {
       newt
       slang
       libtraceevent
+      libtracefs
       libunwind
       zlib
       openssl
@@ -162,6 +167,8 @@ stdenv.mkDerivation {
       python3
       perl
       babeltrace
+      libllvm.lib
+      capstone
     ]
     ++ (
       if (lib.versionAtLeast kernel.version "5.19") then
